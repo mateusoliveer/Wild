@@ -14,6 +14,9 @@ canvas{display:block;width:100vw;height:100vh;height:100dvh}
 #w{right:104px;bottom:88px;width:60px;height:60px}
 #r{right:30px;bottom:120px;width:60px;height:60px;border-color:#f6c}
 .off{opacity:.45}
+.s{top:34px;width:66px;height:34px;border-radius:8px;font-size:13px;border-color:#fd4}
+#s1{right:90px}#s2{right:16px}
+#b{left:50%;margin-left:-30px;bottom:12px;width:60px;height:38px;border-radius:10px;font-size:13px}
 #end{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;font-size:36px;font-weight:800}
 #end button{font-size:18px;padding:12px 28px;border-radius:10px;border:0;background:#4aa3ff;color:#fff;font-weight:700}
 </style>
@@ -21,29 +24,32 @@ canvas{display:block;width:100vw;height:100vh;height:100dvh}
 <body>
 <canvas id="c"></canvas>
 <div class="b" id="a">ATQ</div><div class="b" id="q">Q</div><div class="b" id="w">W</div><div class="b" id="r">R</div>
+<div class="b s" id="s1">⚔ 300</div><div class="b s" id="s2">❤ 300</div><div class="b" id="b">Base</div>
 <div id="end"><span id="et"></span><button onclick="location.reload()">Jogar de novo</button></div>
 <script>
 const cv=document.getElementById('c'),g=cv.getContext('2d'),W=2400,H=700,$=i=>document.getElementById(i);
 let vw,vh,sc,dpr;
 function rs(){dpr=devicePixelRatio||1;vw=innerWidth;vh=innerHeight;cv.width=vw*dpr;cv.height=vh*dpr;sc=Math.min(vh/700,vw/800)}
 addEventListener('resize',rs);rs();
-const S={hero:{hp:650,dmg:55,rg:170,cd:.8,r:22,sp:230},mel:{hp:260,dmg:14,rg:30,cd:1,r:13,sp:105},rng:{hp:170,dmg:20,rg:170,cd:1.3,r:11,sp:105},tow:{hp:2000,dmg:95,rg:300,cd:1.1,r:38,sp:0},nex:{hp:3000,dmg:0,rg:0,cd:1,r:60,sp:0}};
-let U=[],FX=[],PR=[],over='',time=0,wave=3;
-const COL=['#4aa3ff','#ff5a5a'],dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-function mk(t,team,x,y){const u={t,team,x,y,...S[t],max:S[t].hp,at:0,dead:0,lvl:1,xp:0,k:0,fx:team?-1:1,fy:0,q:0,w:0,u:0};U.push(u);return u}
+const S={hero:{hp:650,dmg:55,rg:170,cd:.8,r:22,sp:230},mel:{hp:260,dmg:14,rg:30,cd:1,r:13,sp:105},rng:{hp:170,dmg:20,rg:170,cd:1.3,r:11,sp:105},tow:{hp:2000,dmg:95,rg:300,cd:1.1,r:38,sp:0},nex:{hp:3000,dmg:0,rg:0,cd:1,r:60,sp:0},mon:{hp:900,dmg:40,rg:200,cd:1.2,r:30,sp:0}};
+let U=[],FX=[],PR=[],over='',time=0,wave=3,monT=0;
+const COL=['#4aa3ff','#ff5a5a','#b06cff'],dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+function mk(t,team,x,y){const u={t,team,x,y,...S[t],max:S[t].hp,at:0,dead:0,lvl:1,xp:0,k:0,gold:0,rc:0,fx:team?-1:1,fy:0,q:0,w:0,u:0};U.push(u);return u}
 mk('nex',0,150,350);mk('tow',0,750,350);mk('nex',1,2250,350);mk('tow',1,1650,350);
-const P=mk('hero',0,290,350),B=mk('hero',1,2110,350);
+const P=mk('hero',0,290,350),B=mk('hero',1,2110,350);mk('mon',2,1200,120);
+function buy(h,hp){if(h.gold<300)return;h.gold-=300;if(hp){h.max+=200;h.hp+=200}else h.dmg+=18}
+const shopOk=()=>P.dead||Math.abs(P.x-290)<260;
 const prot=o=>o.t=='nex'&&U.some(t=>t.t=='tow'&&t.team==o.team);
-const foe=(u,o)=>o.team!=u.team&&!o.dead&&o.hp>0&&!prot(o);
+const foe=(u,o)=>o.team!=u.team&&!o.dead&&o.hp>0&&!prot(o)&&(o.t!='mon'||u==P||u.src==P);
 function gainXp(h,n){h.xp+=n;while(h.xp>=h.lvl*100){h.xp-=h.lvl*100;h.lvl++;h.max+=90;h.hp+=90;h.dmg+=8;FX.push({x:h.x,y:h.y,r:60,t:.5,c:'#ff0'})}}
 function hit(u,d,src){
   if(u.hp<=0||u.dead||prot(u))return;
   u.hp-=d;u.fl=.1;if(u.hp>0)return;
   const eh=u.team?P:B;
-  if(!eh.dead&&(src==eh||dist(eh,u)<600))gainXp(eh,u.t=='hero'?150:u.t=='tow'?200:35);
-  if(u.t=='hero'){u.dead=6+u.lvl*2;eh.k++}
+  if(!eh.dead&&(src==eh||dist(eh,u)<600)){gainXp(eh,u.t=='hero'?150:u.t=='tow'?200:u.t=='mon'?80:35);eh.gold+=u.t=='hero'?150:u.t=='tow'?200:u.t=='mon'?120:20}
+  if(u.t=='hero'){u.dead=6+u.lvl*2;u.rc=0;eh.k++}
   else if(u.t=='nex'){over=u.team?'VITÓRIA!':'DERROTA';$('et').textContent=over;$('end').style.display='flex'}
-  else u.gone=1;
+  else{u.gone=1;if(u.t=='mon')monT=45}
 }
 function mv(u,tx,ty,dt){const dx=tx-u.x,dy=ty-u.y,d=Math.hypot(dx,dy)||1;u.fx=dx/d;u.fy=dy/d;u.x+=u.fx*u.sp*dt;u.y+=u.fy*u.sp*dt}
 function near(u,rg,pen){let tg=null,bs=1e9;for(const o of U){if(!foe(u,o))continue;const d=dist(u,o)-o.r;if(d>rg)continue;const s=d+(pen&&o.t=='hero'?1e3:0);if(s<bs){bs=s;tg=o}}return tg}
@@ -77,11 +83,15 @@ function cast(k){
 }
 for(const k of'qwr')$(k).addEventListener('pointerdown',e=>{e.preventDefault();cast(k)});
 $('a').addEventListener('pointerdown',e=>{e.preventDefault();atk=1});
+$('b').addEventListener('pointerdown',e=>{e.preventDefault();if(!P.dead)P.rc=3});
+$('s1').addEventListener('pointerdown',e=>{e.preventDefault();if(shopOk())buy(P,0)});
+$('s2').addEventListener('pointerdown',e=>{e.preventDefault();if(shopOk())buy(P,1)});
 for(const ev of['pointerup','pointercancel','pointerleave'])$('a').addEventListener(ev,()=>atk=0);
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=1;if(k=='k')cast('q');if(k=='l')cast('w');if(k=='i')cast('r')});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=0);
 function update(dt){
   time+=dt;wave+=dt;
+  if(monT>0&&(monT-=dt)<=0)mk('mon',2,1200,120);
   if(wave>=20){wave=0;for(const tm of[0,1])for(let i=0;i<3;i++)mk(i<2?'mel':'rng',tm,tm?2080+i*25:320-i*25,300+i*50)}
   for(const u of U){
     u.at-=dt;u.q-=dt;u.w-=dt;u.u-=dt;if(u.fl)u.fl=Math.max(0,u.fl-dt);
@@ -89,10 +99,12 @@ function update(dt){
       const bx=u.team?2110:290;
       if(u.dead){u.dead-=dt;if(u.dead<=0){u.dead=0;u.hp=u.max;u.x=bx;u.y=350}continue}
       u.hp=Math.min(u.max,u.hp+u.max*(Math.abs(u.x-bx)<220?.18:.006)*dt);
+      u.gold+=2*dt;if(u==B&&u.gold>=300)buy(u,Math.random()<.5);
     }
     if(u==P){
       let mx=jx+(keys.d?1:0)-(keys.a?1:0),my=jy+(keys.s?1:0)-(keys.w?1:0),m=Math.hypot(mx,my);
-      if(m>.15){if(m>1){mx/=m;my/=m}P.x+=mx*P.sp*dt;P.y+=my*P.sp*dt;m=Math.hypot(mx,my);P.fx=mx/m;P.fy=my/m}
+      if(m>.15){if(m>1){mx/=m;my/=m}P.x+=mx*P.sp*dt;P.y+=my*P.sp*dt;m=Math.hypot(mx,my);P.fx=mx/m;P.fy=my/m;P.rc=0}
+      if(P.rc>0){if(P.fl)P.rc=0;else if((P.rc-=dt)<=0){P.rc=0;P.x=290;P.y=350}}
       if((atk||keys.j)&&P.at<=0){const t=near(P,P.rg);if(t){const l=dist(P,t)||1;P.fx=(t.x-P.x)/l;P.fy=(t.y-P.y)/l;shot(P,t)}}
     }else ai(u,dt);
   }
@@ -129,12 +141,14 @@ function draw(){
   g.restore();
   // HUD
   g.fillStyle='#fff';g.font='bold 15px system-ui';g.textAlign='left';
-  g.fillText(`Nv ${P.lvl}   ⚔ ${P.k} / ☠ ${B.k}   ${Math.floor(time/60)}:${String(Math.floor(time%60)).padStart(2,'0')}`,12,22);
+  g.fillText(`Nv ${P.lvl}   ⚔ ${P.k} / ☠ ${B.k}   💰 ${Math.floor(P.gold)}   ${Math.floor(time/60)}:${String(Math.floor(time%60)).padStart(2,'0')}`,12,22);
   bar(72,30,120,6,P.xp/(P.lvl*100),'#fd4');
   const mw=Math.min(220,vw*.4),mx=vw/2-mw/2;g.fillStyle='#0008';g.fillRect(mx,8,mw,16);
   for(const u of U){if(u.dead)continue;g.fillStyle=u==P?'#ff0':COL[u.team];const s=u.t=='mel'||u.t=='rng'?3:6;g.fillRect(mx+u.x/W*mw-s/2,16-s/2,s,s)}
   if(joy){g.strokeStyle='#fff6';g.lineWidth=3;g.beginPath();g.arc(joy.x,joy.y,50,0,7);g.stroke();g.fillStyle='#fff8';g.beginPath();g.arc(joy.x+jx*50,joy.y+jy*50,22,0,7);g.fill()}
   g.textAlign='center';
+  if(P.rc>0){g.font='bold 20px system-ui';g.fillText('Voltando à base... '+Math.ceil(P.rc),vw/2,vh/2+60)}
+  const so=!shopOk()||P.gold<300;$('s1').classList.toggle('off',so);$('s2').classList.toggle('off',so);
   if(P.dead){g.font='bold 26px system-ui';g.fillText('Renascendo em '+Math.ceil(P.dead),vw/2,vh/2)}
   if(time<8){g.font='14px system-ui';g.fillText('Arraste à esquerda para andar • Destrua a torre e o núcleo vermelho',vw/2,vh-12)}
   for(const[k,c,l]of[['q',P.q,'Q'],['w',P.w,'W'],['r',P.u,'R']]){const e=$(k),lock=k=='r'&&P.lvl<3,t=lock?'Nv3':c>0?Math.ceil(c):l;if(e.textContent!=t)e.textContent=t;e.classList.toggle('off',lock||c>0)}
